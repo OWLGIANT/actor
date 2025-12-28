@@ -1,16 +1,15 @@
 package gateway
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
 	"github.com/example/microshop/pkg/config"
 	"github.com/example/microshop/pkg/discovery"
 	"github.com/gin-gonic/gin"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	"github.com/swaggo/files"
 	"go.uber.org/zap"
 )
 
@@ -176,10 +175,3 @@ func loggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 		)
 	}
 }
-
-import (
-	"github.com/swaggo/gin-swagger"
-	"github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
-	swaggerFiles "github.com/swaggo/files"
-)

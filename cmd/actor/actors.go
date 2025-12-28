@@ -1,16 +1,10 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"time"
 
-	"github.com/AsynkronIT/protoactor-go/actor"
-	"github.com/AsynkronIT/protoactor-go/cluster"
-	"github.com/AsynkronIT/protoactor-go/cluster/identity"
-	"github.com/AsynkronIT/protoactor-go/cluster/providers/etcd"
-	"github.com/AsynkronIT/protoactor-go/log"
-	"github.com/AsynkronIT/protoactor-go/remote"
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/example/microshop/pkg/config"
 	"go.uber.org/zap"
 )
@@ -127,7 +121,6 @@ func (a *OrderClusterActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case *actor.Started:
 		a.orders = make(map[string]*OrderInfo)
-		log.Info("Order cluster actor started")
 
 	case *CreateOrderCluster:
 		orderID := fmt.Sprintf("ORD-%d", time.Now().UnixNano())
@@ -138,7 +131,6 @@ func (a *OrderClusterActor) Receive(ctx actor.Context) {
 			Status:      "pending",
 			CreatedAt:   time.Now(),
 		}
-		log.Info("Order created in cluster", log.String("order_id", orderID))
 		ctx.Respond(&OrderResponse{OrderID: orderID, Status: "pending"})
 
 	case *GetOrderStatusCluster:
@@ -192,25 +184,6 @@ func StartActorService(cfg *config.Config, logger *zap.Logger) error {
 
 	logger.Info("Local actors started",
 		zap.String("order_actor", orderPid.Id))
-
-	// Setup cluster (optional - for distributed actor system)
-	clusterProvider, err := etcd.New(cfg.Etcd.Endpoints, etcd.WithPrefix(cfg.Etcd.Prefix))
-	if err != nil {
-		logger.Warn("Failed to create etcd provider, running in local mode", zap.Error(err))
-	} else {
-		// Setup clustered actors
-		clusterConfig := cluster.Configure("microshop-cluster", system,
-			cluster.WithProvider(clusterProvider),
-			cluster.WithIdentityLookup(identity.NewCustomIdentityLookup()),
-		)
-
-		c, err := cluster.Start(clusterConfig)
-		if err != nil {
-			logger.Warn("Failed to start cluster, running in local mode", zap.Error(err))
-		} else {
-			logger.Info("Actor cluster started", zap.String("cluster", c.GetClusterName()))
-		}
-	}
 
 	// Example: Send a message to order actor
 	go func() {

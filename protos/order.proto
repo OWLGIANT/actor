@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package order;
+package proto;
 
-option go_package = "github.com/example/microshop/proto/order";
+option go_package = "github.com/example/microshop/pkg/proto";
 
 // Order Service
 service OrderService {

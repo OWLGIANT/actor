@@ -10,7 +10,6 @@ import (
 	"github.com/example/microshop/pkg/config"
 	"github.com/example/microshop/pkg/discovery"
 	"github.com/example/microshop/pkg/grpc"
-	"github.com/example/microshop/pkg/repository"
 	"go.uber.org/zap"
 )
 
@@ -60,7 +59,7 @@ func main() {
 	logger.Info("Service registered in etcd")
 
 	// Ping dependencies
-	if err := server.redis.Ping(ctx); err != nil {
+	if err := server.Redis.Ping(ctx); err != nil {
 		logger.Warn("Redis connection failed", zap.Error(err))
 	} else {
 		logger.Info("Redis connected successfully")
@@ -96,5 +95,3 @@ func main() {
 
 	logger.Info("Service stopped")
 }
-
-import "net"

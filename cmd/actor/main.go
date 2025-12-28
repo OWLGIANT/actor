@@ -1,13 +1,11 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/example/microshop/cmd/actor"
 	"github.com/example/microshop/pkg/config"
 	"go.uber.org/zap"
 )
@@ -29,7 +27,7 @@ func main() {
 	logger.Info("Starting ProtoActor service")
 
 	// Start actor service
-	if err := actor.StartActorService(cfg, logger); err != nil {
+	if err := StartActorService(cfg, logger); err != nil {
 		logger.Fatal("Failed to start actor service", zap.Error(err))
 	}
 

@@ -2,13 +2,15 @@ package grpc
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"net"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/example/microshop/pkg/config"
 	"github.com/example/microshop/pkg/models"
-	pb "github.com/example/microshop/proto/user"
+	pb "github.com/example/microshop/pkg/proto"
 	"github.com/example/microshop/pkg/repository"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -22,7 +24,7 @@ import (
 type UserServer struct {
 	pb.UnimplementedUserServiceServer
 	db      *gorm.DB
-	redis   *repository.RedisRepository
+	Redis   *repository.RedisRepository
 	mongo   *repository.MongoRepository
 	logger  *zap.Logger
 	config  *config.Config
@@ -51,7 +53,7 @@ func NewUserServer(cfg *config.Config, logger *zap.Logger) (*UserServer, error) 
 
 	return &UserServer{
 		db:     db,
-		redis:  redisRepo,
+		Redis:  redisRepo,
 		mongo:  mongoRepo,
 		logger: logger,
 		config: cfg,
@@ -90,7 +92,7 @@ func (s *UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) 
 	}
 
 	// Cache in Redis
-	s.redis.CacheUser(ctx, &repository.UserCache{
+	s.Redis.CacheUser(ctx, &repository.UserCache{
 		ID:    user.ID,
 		Name:  user.Name,
 		Email: user.Email,
@@ -119,7 +121,7 @@ func (s *UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) 
 
 func (s *UserServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
 	// Try cache first
-	cachedUser, err := s.redis.GetUserCache(ctx, req.Id)
+	cachedUser, err := s.Redis.GetUserCache(ctx, req.Id)
 	if err == nil {
 		return &pb.GetUserResponse{
 			User: &pb.User{
@@ -140,7 +142,7 @@ func (s *UserServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.G
 	}
 
 	// Update cache
-	s.redis.CacheUser(ctx, &repository.UserCache{
+	s.Redis.CacheUser(ctx, &repository.UserCache{
 		ID:    user.ID,
 		Name:  user.Name,
 		Email: user.Email,
@@ -216,7 +218,7 @@ func (s *UserServer) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) 
 	}
 
 	// Invalidate cache
-	s.redis.Del(ctx, fmt.Sprintf("user:%s", req.Id))
+	s.Redis.Del(ctx, fmt.Sprintf("user:%s", req.Id))
 
 	return &pb.UpdateUserResponse{
 		User: &pb.User{
@@ -236,7 +238,7 @@ func (s *UserServer) DeleteUser(ctx context.Context, req *pb.DeleteUserRequest) 
 	}
 
 	// Delete cache
-	s.redis.Del(ctx, fmt.Sprintf("user:%s", req.Id))
+	s.Redis.Del(ctx, fmt.Sprintf("user:%s", req.Id))
 
 	return &pb.DeleteUserResponse{
 		Success: true,
@@ -244,17 +246,11 @@ func (s *UserServer) DeleteUser(ctx context.Context, req *pb.DeleteUserRequest) 
 }
 
 func (s *UserServer) Close() error {
-	s.redis.Close()
+	s.Redis.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	return s.mongo.Close(ctx)
 }
-
-import (
-	"net"
-
-	"go.mongodb.org/mongo-driver/bson"
-)
 
 func generateUUID() string {
 	return fmt.Sprintf("%d", time.Now().UnixNano())
