@@ -38,6 +38,16 @@ func main() {
 
 	// Create gateway
 	gw := gateway.NewGateway(cfg, logger, sd)
+
+	// Connect to gRPC services
+	if err := gw.Connect(); err != nil {
+		logger.Error("Failed to connect to gRPC services", zap.Error(err))
+		if sd != nil {
+			sd.Close()
+		}
+		panic(fmt.Sprintf("Failed to connect to gRPC services: %v", err))
+	}
+
 	gw.SetupRoutes()
 
 	// Start gateway in goroutine
@@ -61,6 +71,8 @@ func main() {
 		logger.Fatal("Gateway error", zap.Error(err))
 	}
 
+	// Close connections
+	gw.Close()
 	if sd != nil {
 		sd.Close()
 	}
