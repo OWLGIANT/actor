@@ -27,7 +27,7 @@ func main() {
 	logger.Info("Starting ProtoActor service")
 
 	// Start actor service
-	if err := StartActorService(cfg, logger); err != nil {
+	if err = StartActorService(cfg, logger); err != nil {
 		logger.Fatal("Failed to start actor service", zap.Error(err))
 	}
 

@@ -5,22 +5,22 @@ server:
 
 etcd:
   endpoints:
-    - "localhost:2379"
+    - "43.134.189.161:2379"
   dial_timeout: 5
   prefix: "/microshop/services/"
 
 redis:
-  addr: "localhost:6379"
-  password: ""
-  db: 0
+  addr: "106.54.61.248:6379"
+  password: "KoJqlTDu1d5HwfXgJ4QTbZQt"
+  db: 11
   pool_size: 10
 
 mysql:
-  host: "localhost"
+  host: "106.54.61.248"
   port: 3306
   username: "root"
-  password: "123456"
-  database: "microshop"
+  password: "Np2qgqtiUayA857GpuVI0Wtg"
+  database: "gva"
   max_idle_conns: 10
   max_open_conns: 100
 
