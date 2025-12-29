@@ -53,6 +53,27 @@ func (g *Gateway) SetupRoutes() {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
+	// gRPC connection status
+	g.router.GET("/status", func(c *gin.Context) {
+		status := make(map[string]interface{})
+
+		// Check user service connection
+		if g.grpcClients.UserClient() != nil {
+			status["user_service"] = "connected"
+		} else {
+			status["user_service"] = "disconnected"
+		}
+
+		// Check order service connection
+		if g.grpcClients.OrderClient() != nil {
+			status["order_service"] = "connected"
+		} else {
+			status["order_service"] = "disconnected"
+		}
+
+		c.JSON(http.StatusOK, status)
+	})
+
 	// API v1 routes
 	v1 := g.router.Group("/api/v1")
 	{

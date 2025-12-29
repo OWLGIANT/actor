@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/example/microshop/pkg/config"
@@ -26,6 +27,9 @@ type ClientManager struct {
 	// gRPC connections
 	userConn  *grpc.ClientConn
 	orderConn *grpc.ClientConn
+
+	// mu protects the connections
+	mu sync.RWMutex
 }
 
 // NewClientManager creates a new gRPC client manager
@@ -37,16 +41,43 @@ func NewClientManager(cfg *config.Config, logger *zap.Logger, disc *discovery.Se
 	}
 }
 
-// Connect establishes connections to all microservices
+// Connect establishes connections to all microservices with retry
 func (m *ClientManager) Connect() error {
-	// Connect to User Service
-	if err := m.connectUserService(); err != nil {
-		return fmt.Errorf("failed to connect to user service: %w", err)
+	var lastErr error
+
+	// Retry connecting to User Service
+	for i := 0; i < 3; i++ {
+		if err := m.connectUserService(); err != nil {
+			lastErr = err
+			m.logger.Warn("Failed to connect to user service, retrying...",
+				zap.Int("attempt", i+1),
+				zap.Error(err))
+			time.Sleep(time.Second * time.Duration(i+1))
+			continue
+		}
+		break
 	}
 
-	// Connect to Order Service
-	if err := m.connectOrderService(); err != nil {
-		return fmt.Errorf("failed to connect to order service: %w", err)
+	if lastErr != nil && m.userClient == nil {
+		return fmt.Errorf("failed to connect to user service after retries: %w", lastErr)
+	}
+
+	// Retry connecting to Order Service
+	lastErr = nil
+	for i := 0; i < 3; i++ {
+		if err := m.connectOrderService(); err != nil {
+			lastErr = err
+			m.logger.Warn("Failed to connect to order service, retrying...",
+				zap.Int("attempt", i+1),
+				zap.Error(err))
+			time.Sleep(time.Second * time.Duration(i+1))
+			continue
+		}
+		break
+	}
+
+	if lastErr != nil && m.orderClient == nil {
+		return fmt.Errorf("failed to connect to order service after retries: %w", lastErr)
 	}
 
 	return nil
@@ -54,6 +85,14 @@ func (m *ClientManager) Connect() error {
 
 // connectUserService establishes a connection to the user service
 func (m *ClientManager) connectUserService() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Close existing connection if any
+	if m.userConn != nil {
+		m.userConn.Close()
+	}
+
 	// Default user service address
 	target := "localhost:50051"
 
@@ -81,7 +120,7 @@ func (m *ClientManager) connectUserService() error {
 		grpc.WithBlock(),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("dial failed: %w", err)
 	}
 
 	m.userConn = conn
@@ -93,6 +132,14 @@ func (m *ClientManager) connectUserService() error {
 
 // connectOrderService establishes a connection to the order service
 func (m *ClientManager) connectOrderService() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Close existing connection if any
+	if m.orderConn != nil {
+		m.orderConn.Close()
+	}
+
 	// Default order service address
 	target := "localhost:50052"
 
@@ -120,7 +167,7 @@ func (m *ClientManager) connectOrderService() error {
 		grpc.WithBlock(),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("dial failed: %w", err)
 	}
 
 	m.orderConn = conn
@@ -132,11 +179,23 @@ func (m *ClientManager) connectOrderService() error {
 
 // UserClient returns the user service gRPC client
 func (m *ClientManager) UserClient() proto.UserServiceClient {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	if m.userClient == nil {
+		m.logger.Warn("User service client is not initialized")
+	}
 	return m.userClient
 }
 
 // OrderClient returns the order service gRPC client
 func (m *ClientManager) OrderClient() proto.OrderServiceClient {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	if m.orderClient == nil {
+		m.logger.Warn("Order service client is not initialized")
+	}
 	return m.orderClient
 }
 
