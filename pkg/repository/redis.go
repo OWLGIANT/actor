@@ -85,3 +85,15 @@ func (r *RedisRepository) GetUserCache(ctx context.Context, userID string) (*Use
 	}
 	return &user, nil
 }
+
+// Cache for order data
+type OrderCache struct {
+	ID     string `json:"id"`
+	UserID string `json:"user_id"`
+	Status string `json:"status"`
+}
+
+func (r *RedisRepository) CacheOrder(ctx context.Context, order *OrderCache) error {
+	key := fmt.Sprintf("order:%s", order.ID)
+	return r.SetJSON(ctx, key, order, 30*time.Minute)
+}

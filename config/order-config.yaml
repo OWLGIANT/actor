@@ -1,0 +1,37 @@
+server:
+  name: "order-service"
+  port: 50052
+  host: "0.0.0.0"
+
+etcd:
+  endpoints:
+    - "43.134.189.161:2379"
+  dial_timeout: 5
+  prefix: "/microshop/services/"
+
+redis:
+  addr: "106.54.61.248:6379"
+  password: "KoJqlTDu1d5HwfXgJ4QTbZQt"
+  db: 11
+  pool_size: 10
+
+mysql:
+  host: "106.54.61.248"
+  port: 3306
+  username: "root"
+  password: "Np2qgqtiUayA857GpuVI0Wtg"
+  database: "gva"
+  max_idle_conns: 10
+  max_open_conns: 100
+
+mongodb:
+  uri: "mongodb://localhost:27017"
+  database: "microshop"
+  collection: "audit_logs"
+
+log:
+  level: "info"
+  encoding: "json"
+  output_paths:
+    - "stdout"
+    - "logs/order.log"
