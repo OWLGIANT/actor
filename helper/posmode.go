@@ -5,6 +5,7 @@ import (
 )
 
 // 仅支持双向持仓模式的交易所 其他统一用单向持仓模式 可以最大化保证金利用
+// 仅支持双向持仓模式的交易所 其他统一用单向持仓模式 可以最大化保证金利用
 var posModeDualSet = set.NewSetFromSlice[BrokerName]([]BrokerName{
 	BrokernameBitmartUsdtSwap,
 	BrokernameAscendexUsdtSwap,
