@@ -32,13 +32,13 @@ func init() {
 		}
 		if GitCommitHash == "" {
 			fmt.Println(GitCommitHash)
-			panic("请在构建时设置 github.com/ThousandQuant/beastquant.GitCommitHash")
+			panic("请在构建时设置 actor.GitCommitHash")
 		}
 		if AppName == "" {
-			panic("请在构建时设置 github.com/ThousandQuant/beastquant.AppName")
+			panic("请在构建时设置 actor.AppName")
 		}
 		if BuildTime == "" {
-			panic("请在构建时设置 github.com/ThousandQuant/beastquant.BuildTime")
+			panic("请在构建时设置 actor.BuildTime")
 		}
 	} else {
 		GitCommitHash = "the first test"
@@ -390,7 +390,6 @@ func DetectPrecision(brokerConfigs []helper.BrokerConfig) error {
 		cb := helper.CallbackFunc{
 			OnExit: func(msg string) {
 				log.Errorf("detect precision failed, OnExit %s", msg)
-				fmt.Printf("detect precision failed, OnExit %s\n", msg)
 				panic(msg)
 			},
 			OnReset: func(msg string) {
@@ -419,20 +418,17 @@ func DetectPrecision(brokerConfigs []helper.BrokerConfig) error {
 				if !ok {
 					msg := fmt.Sprintf("not found pairinfo %s in %s", pair.String(), brokerConfig.Name)
 					log.Errorf(msg)
-					fmt.Printf(msg + "\n")
 					return fmt.Errorf("%s", msg)
 				}
 				if pairinfo.TickSize < (1.0 / fastfixed.NPlaces) {
 					msg := fmt.Sprintf("will use slow high decimal, because tick size %f is too small in %s@%s", pairinfo.TickSize, brokerConfig.Name, pair.String())
 					log.Warnf(msg)
-					fmt.Printf(msg + "\n")
 					fixed.TurnOnHighDecimal()
 					return nil
 				}
 				if pairinfo.StepSize < (1.0 / fastfixed.NPlaces) {
 					msg := fmt.Sprintf("will use slow high decimal, because step size %f is too small in %s@%s", pairinfo.StepSize, brokerConfig.Name, pair.String())
 					log.Warnf(msg)
-					fmt.Printf(msg + "\n")
 					fixed.TurnOnHighDecimal()
 					return nil
 				}

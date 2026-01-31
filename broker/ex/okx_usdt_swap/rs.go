@@ -138,31 +138,7 @@ func (rs *OkxUsdtSwapRs) subPri() error {
 	msg := getWsLogin(&rs.BrokerConfig)
 	rs.priWs.SendMessage(msg)
 	// 实际登录注册信息被放在后面了, 在 realSubscribe 里面
-
-	time.Sleep(time.Second * 3)
 	rs.logged = true
-	// go func(latestCallBeforeTrade int64) {
-	// 	for i := 0; i < 15; i++ {
-	// 		if rs.logged {
-	// 			time.Sleep(time.Second) // 交易所会反应慢
-	// 			rs.realSubPri()
-	// 			break
-	// 		}
-	// 		time.Sleep(time.Second)
-	// 		// okx不允许重复发送登录
-	// 		// if i%2 == 0 {
-	// 		// msg := getWsLogin(rs.params)
-	// 		// rs.priWs.SendMessage(msg)
-	// 		// }
-	// 	}
-	// 	if !rs.logged {
-	// 		// BeforeTrade会在清仓过程中多次被调用，这里只在最后真的失败时退出
-	// 		if latestCallBeforeTrade == rs.latestCallBeforeTrade {
-	// 			rs.Cb.OnExit("okx usdt swap 登录失败")
-	// 		}
-	// 		return
-	// 	}
-	// }(rs.latestCallBeforeTrade)
 	return nil
 }
 
@@ -493,7 +469,7 @@ func (rs *OkxUsdtSwapRs) DoCancelPendingOrders(symbol string) (err helper.ApiErr
 					"instId": string(data.GetStringBytes("instId")),
 					"ordId":  string(data.GetStringBytes("ordId")),
 				}
-				_, err := rs.client.post("/api/v5/trade/cancel-order", msg, func(respBody []byte, respHeader *fasthttp.ResponseHeader) {
+				_, err:= rs.client.post("/api/v5/trade/cancel-order", msg, func(respBody []byte, respHeader *fasthttp.ResponseHeader) {
 					p := handyPool.Get()
 					defer handyPool.Put(p)
 					value, handlerErr := p.ParseBytes(respBody)
@@ -2136,13 +2112,6 @@ func (rs *OkxUsdtSwapRs) DoGetPendingOrders(symbol string) (results []helper.Ord
 				case "ioc":
 					o.OrderType = helper.OrderTypeIoc
 				}
-				// : {"code":"0","data":[{"accFillSz":"0","algoClOrdId":"","algoId":"","attachAlgoClOrdId":"","attachAlgoOrds":[],"avgPx":"","cTime":"1727168792667",
-				// "cancelSource":"","cancelSourceReason":"","category":"normal","ccy":"","clOrdId":"btc9MRT685529101","fee":"0","feeCcy":"USDT","fillPx":"",
-				// "fillSz":"0","fillTime":"","instId":"BTC-USDT-SWAP","instType":"SWAP","isTpLimit":"false","lever":"5",
-				// "linkedAlgoOrd":{"algoId":""},"ordId":"1834299755462148096","ordType":"limit","pnl":"0","posSide":"net",
-				// "px":"57420.1","pxType":"","pxUsd":"","pxVol":"","quickMgnType":"","rebate":"0","rebateCcy":"USDT","reduceOnly":
-				// "false","side":"buy","slOrdPx":"","slTriggerPx":"","slTriggerPxType":"","source":"","state":"live","stpId":"","stpMode"
-				// :"cancel_maker","sz":"0.3","tag":"","tdMode":"cross","tgtCcy":"","tpOrdPx":"","tpTriggerPx":"","tpTriggerPxType":"","tradeId":"","uTime":"1727168792667"}],"msg":""}
 				results = append(results, o)
 			}
 		}
