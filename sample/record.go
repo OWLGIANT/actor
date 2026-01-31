@@ -70,7 +70,7 @@ func main() {
 	}
 	rsTradeMsg := helper.TradeMsg{}
 	rsPairInfo := helper.ExchangeInfo{}
-	rs := beastquant.GetRsClient(*ex, helper.BrokerConfig{
+	rs := actor.GetRsClient(*ex, helper.BrokerConfig{
 		Name:      helper.BrokernameBinanceUsdSwap.String(),
 		AccessKey: access_key,
 		SecretKey: secret_key,
@@ -94,7 +94,7 @@ func main() {
 
 	wsTradeMsg := helper.TradeMsg{}
 	wsPairInfo := helper.ExchangeInfo{}
-	ws := beastquant.GetWsClient(*ex, helper.BrokerConfig{
+	ws := actor.GetWsClient(*ex, helper.BrokerConfig{
 		Name:       helper.BrokernameBinanceUsdSwap.String(),
 		AccessKey:  access_key,
 		SecretKey:  secret_key,

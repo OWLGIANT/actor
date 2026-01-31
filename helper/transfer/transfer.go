@@ -101,6 +101,7 @@ type APIOperateParams struct {
 	UID      string // 子账户的UID
 	Note     string // 备注   长度不能超过 50 个字符
 	IP       string // IP白名单
+	RemoveIP string // 移除IP白名单
 	APIKey   string // apiKey
 	Password string // 子账户密码
 	SubName  string // 子账户名称
