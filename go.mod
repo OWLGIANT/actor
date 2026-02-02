@@ -12,6 +12,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/gobwas/ws v1.4.0
 	github.com/goex-top/dingding v0.0.0-20221203063000-5497df4f5b94
+	github.com/gorilla/websocket v1.5.3
 	github.com/huandu/xstrings v1.5.0
 	github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c
 	github.com/json-iterator/go v1.1.12
@@ -28,6 +29,7 @@ require (
 	github.com/valyala/fastjson v1.6.7
 	go.uber.org/atomic v1.11.0
 	go.uber.org/zap v1.27.0
+	golang.org/x/exp v0.0.0-20251002181428-27f1f14c8bb9
 	golang.org/x/net v0.48.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
@@ -67,7 +69,6 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.46.0 // indirect
-	golang.org/x/exp v0.0.0-20251002181428-27f1f14c8bb9 // indirect
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
