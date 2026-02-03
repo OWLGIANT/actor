@@ -230,3 +230,19 @@ func getIp(privateIps []string, providers []string) (map[string]string, []string
 
 	return ipPool, publicIps, failIps
 }
+
+/* ---------------------------------------------------------------------------------------------------------------- */
+
+// GenIpPool 主动生成IP池文件
+// 获取本机所有私有IP，并查询对应的公网IP，保存到 ipPool_v1.json 文件
+func GenIpPool() error {
+	privateIps, err := GetClientIp()
+	if err != nil {
+		log.Errorf("GenIpPool GetClientIp err: %s", err.Error())
+		return err
+	}
+
+	publicIps, ipPool := GetIpPoolfromProviders(privateIps, PROVIDERS)
+	log.Infof("GenIpPool 完成 - 私有IP: %v, 公网IP: %v, IP池: %v", privateIps, publicIps, ipPool)
+	return nil
+}
