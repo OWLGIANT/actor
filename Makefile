@@ -11,7 +11,6 @@ BUILD_TIME := $(shell date +"%Y-%m-%d_%H:%M:%S")
 # Docker 配置
 IMAGE_NAME := wwttxx2/$(APP_NAME)
 IMAGE_TAG := $(VERSION)
-REGISTRY ?=
 
 # 构建配置
 GOOS ?= linux
@@ -25,7 +24,7 @@ PROTO_DIR=protos
 PROTO_OUTPUT_DIR=pkg/proto
 GO=go
 PROTOC=protoc
-
+export https_proxy=http://127.0.0.1:33210 http_proxy=http://127.0.0.1:33210 all_proxy=socks5://127.0.0.1:33211
 # 颜色
 GREEN := \033[0;32m
 YELLOW := \033[1;33m
@@ -76,7 +75,7 @@ build-bin:
 	@echo "$(GREEN)========================================$(NC)"
 	@rm -f $(APP_NAME)
 	@CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
-		-ldflags "-s -w -X 'main.version=$(VERSION)' -X 'main.buildTime=$(BUILD_TIME)' -X 'main.gitCommit=$(GIT_COMMIT)'" \
+		-ldflags "-s -w -X 'actor.GitCommitHash=$(GIT_COMMIT)' -X 'actor.AppName=$(APP_NAME)' -X 'actor.BuildTime=$(BUILD_TIME)'" \
 		-o $(APP_NAME) ./cmd/server
 	@echo "$(GREEN)编译完成: $(APP_NAME)$(NC)"
 	@ls -lh $(APP_NAME)

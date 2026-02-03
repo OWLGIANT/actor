@@ -39,9 +39,9 @@ export GOARCH=${GOARCH}
 
 # 构建参数
 LDFLAGS="-s -w"
-LDFLAGS="${LDFLAGS} -X 'main.version=${VERSION}'"
-LDFLAGS="${LDFLAGS} -X 'main.buildTime=${BUILD_TIME}'"
-LDFLAGS="${LDFLAGS} -X 'main.gitCommit=${GIT_COMMIT}'"
+LDFLAGS="${LDFLAGS} -X 'actor.GitCommitHash=${GIT_COMMIT}'"
+LDFLAGS="${LDFLAGS} -X 'actor.AppName=${APP_NAME}'"
+LDFLAGS="${LDFLAGS} -X 'actor.BuildTime=${BUILD_TIME}'"
 
 # 编译
 echo -e "${YELLOW}Building binary...${NC}"
