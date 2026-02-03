@@ -1,5 +1,7 @@
 package helper
 
+const NORMAL_EXIT_MSG = "收到停机请求 正常停机"
+
 type TaskStatus int
 
 const (

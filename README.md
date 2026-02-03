@@ -1,199 +1,319 @@
-# MicroShop - 微服务电商平台示例项目
+# Actor - 量化交易机器人系统
 
-一个完整的 Go 微服务项目示例，包含以下技术栈：
+Actor 是一个高性能的量化交易机器人系统，支持多交易所、远程控制和自动化交易策略执行。
+
+## 项目架构
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           Backend Control System                            │
+│                          (远程控制后台 - WebSocket)                           │
+└─────────────────────────────────────┬───────────────────────────────────────┘
+                                      │
+                    ┌─────────────────┼─────────────────┐
+                    │     WebSocket Commands            │
+                    │  (register/start/stop/status)     │
+                    └─────────────────┼─────────────────┘
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              Actor Server                                   │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                        cmd/server/main.go                           │    │
+│  │  • 加载配置 (configs/config.yaml)                                    │    │
+│  │  • 初始化日志系统                                                     │    │
+│  │  • 启动各管理器                                                       │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                      │                                      │
+│         ┌────────────────────────────┼────────────────────────────┐         │
+│         │                            │                            │         │
+│         ▼                            ▼                            ▼         │
+│  ┌─────────────┐            ┌─────────────┐            ┌─────────────┐      │
+│  │ RobotManager│            │ExchangeMgr  │            │BackendClient│      │
+│  │             │            │             │            │             │      │
+│  │ • 创建机器人 │            │ • 管理交易所 │            │ • 后台通信     │        │
+│  │ • 启动/停止  │            │ • 连接池管理 │            │ • 心跳保活     │        │
+│  │ • 状态监控   │            │ • 统一接口   │            │ • 命令处理    │       │
+│  └──────┬──────┘            └──────┬──────┘            └─────────────┘      │
+│         │                          │                                        │
+└─────────┼──────────────────────────┼────────────────────────────────────────┘
+          │                          │
+          ▼                          ▼
+┌─────────────────┐    ┌──────────────────────────────────────────────────────┐
+│   Cat Robot     │    │                  Exchange Clients                     │
+│  (量化机器人)    │    │  ┌────────────┐ ┌────────────┐ ┌────────────┐        │
+│                 │    │  │  Binance   │ │    OKX     │ │   Bitget   │        │
+│ ┌─────────────┐ │    │  │ ┌────────┐ │ │ ┌────────┐ │ │ ┌────────┐ │        │
+│ │   Quant     │ │    │  │ │  Spot  │ │ │ │  Spot  │ │ │ │  Spot  │ │        │
+│ │  量化引擎    │ │    │  │ └────────┘ │ │ └────────┘ │ │ └────────┘ │        │
+│ ├─────────────┤ │    │  │ ┌────────┐ │ │ ┌────────┐ │ │ ┌────────┐ │        │
+│ │   Trade     │◄├────┼──┤ │USDTSwap│ │ │ │USDTSwap│ │ │ │USDTSwap│ │        │
+│ │  交易执行    │ │    │  │ └────────┘ │ │ └────────┘ │ │ └────────┘ │        │
+│ ├─────────────┤ │    │  └────────────┘ └────────────┘ └────────────┘        │
+│ │   Market    │ │    │                       │                               │
+│ │  行情处理    │ │    │         ┌─────────────┴─────────────┐                │
+│ ├─────────────┤ │    │         │                           │                │
+│ │  Callback   │ │    │         ▼                           ▼                │
+│ │  事件回调    │ │    │  ┌─────────────┐           ┌─────────────┐           │
+│ └─────────────┘ │    │  │  REST (Rs)  │           │WebSocket(Ws)│           │
+└─────────────────┘    │  │  • 下单      │           │  • 实时行情  │           │
+                       │  │  • 撤单      │           │  • 账户推送  │           │
+                       │  │  • 查询      │           │  • 订单推送  │           │
+                       │  └──────┬──────┘           └──────┬──────┘           │
+                       │         │                         │                   │
+                       └─────────┼─────────────────────────┼───────────────────┘
+                                 │                         │
+                                 └────────────┬────────────┘
+                                              ▼
+                              ┌───────────────────────────────┐
+                              │      Exchange APIs            │
+                              │   (Binance/OKX/Bitget)        │
+                              └───────────────────────────────┘
+```
+
+## 核心功能流程
+
+### 1. 系统启动流程
+
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│  加载配置     │────▶│  初始化日志   │────▶│ 初始化管理器  │────▶│  连接后台     │
+│ config.yaml  │     │   Logger     │     │ Robot/Exch   │     │  WebSocket   │
+└──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
+                                                                       │
+                                                                       ▼
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│  等待信号     │◀────│  启动调度器   │◀────│  注册Actor   │◀────│  发送心跳     │
+│  优雅退出     │     │  Schedule    │     │  Register    │     │  Heartbeat   │
+└──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
+```
+
+### 2. 机器人生命周期
+
+```
+┌─────────┐    OnCreate    ┌─────────┐    OnStart    ┌─────────┐
+│  空闲   │───────────────▶│  已创建  │──────────────▶│  运行中  │
+│  Idle   │                │ Created │               │ Running │
+└─────────┘                └─────────┘               └────┬────┘
+                                ▲                        │
+                                │         OnStop         │
+                                │◀───────────────────────┘
+                                │
+                           OnDelete
+                                │
+                                ▼
+                          ┌─────────┐
+                          │  已删除  │
+                          │ Deleted │
+                          └─────────┘
+```
+
+### 3. 交易执行流程
+
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│  接收信号     │────▶│  策略计算     │────▶│  风控检查     │
+│  Market Data │     │   Quant      │     │ Risk Check   │
+└──────────────┘     └──────────────┘     └──────┬───────┘
+                                                 │
+                     ┌───────────────────────────┘
+                     ▼
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│  状态上报     │◀────│  订单回调     │◀────│  发送订单     │
+│ Status Update│     │  Callback    │     │ Place Order  │
+└──────────────┘     └──────────────┘     └──────────────┘
+```
+
+### 4. 后台通信协议
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    WebSocket Protocol                        │
+├─────────────────────────────────────────────────────────────┤
+│  actor.register      │  注册 Actor 到后台                    │
+│  actor.heartbeat     │  心跳保活                             │
+│  actor.start         │  启动机器人                           │
+│  actor.stop          │  停止机器人                           │
+│  actor.status        │  查询状态                             │
+│  actor.status_update │  状态更新推送                         │
+│  actor.config        │  配置更新                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## 目录结构
+
+```
+actor/
+├── cmd/                          # 服务入口
+│   └── server/                   # 主服务
+│       └── main.go               # 程序入口
+├── broker/                       # 交易所抽象层
+│   ├── base/                     # 基础接口定义
+│   │   ├── rs.go                 # REST API 接口
+│   │   ├── ws.go                 # WebSocket 接口
+│   │   └── pridata.go            # 私有数据接口
+│   ├── binance/                  # Binance 交易所
+│   │   ├── spot/                 # 现货
+│   │   └── usdtswap/             # U本位合约
+│   ├── okx/                      # OKX 交易所
+│   │   ├── spot/                 # 现货
+│   │   └── usdtswap/             # U本位合约
+│   └── bitget/                   # Bitget 交易所
+│       ├── spot/                 # 现货
+│       └── usdtswap/             # U本位合约
+├── robot/                        # 机器人实现
+│   └── cat/                      # Cat 机器人
+│       ├── cat.go                # 机器人主逻辑
+│       └── quant/                # 量化引擎
+│           ├── quant.go          # 核心逻辑
+│           ├── trade.go          # 交易执行
+│           ├── market.go         # 行情处理
+│           ├── callback.go       # 事件回调
+│           ├── run.go            # 运行循环
+│           └── stop.go           # 停止逻辑
+├── server/                       # 服务层
+│   ├── backend/                  # 后台通信
+│   │   ├── client.go             # WebSocket 客户端
+│   │   ├── protocol.go           # 协议定义
+│   │   ├── handler.go            # 命令处理
+│   │   └── reconnect.go          # 重连逻辑
+│   └── service/                  # 服务管理
+│       ├── manager.go            # 交易所管理器
+│       ├── robot.go              # 机器人管理器
+│       ├── trading.go            # 交易服务
+│       ├── account.go            # 账户服务
+│       └── market.go             # 行情服务
+├── helper/                       # 工具函数
+│   ├── config.go                 # 配置管理
+│   ├── const.go                  # 常量定义
+│   ├── error.go                  # 错误处理
+│   ├── alert.go                  # 告警通知
+│   └── ip.go                     # IP 池管理
+├── schedule/                     # 定时任务
+│   └── schedule.go               # 调度器
+├── third/                        # 第三方库
+│   ├── log/                      # 日志库
+│   ├── cmap/                     # 并发 Map
+│   ├── fixed/                    # 定点数运算
+│   └── gcircularqueue/           # 循环队列
+├── tools/                        # 工具
+│   ├── ippool/                   # IP 池生成
+│   └── bench/                    # 性能测试
+├── configs/                      # 配置文件
+│   └── config.yaml               # 主配置
+├── Dockerfile                    # Docker 构建
+├── build.sh                      # 构建脚本
+└── go.mod                        # Go 模块
+```
+
+## 支持的交易所
+
+| 交易所 | 现货 (Spot) | U本位合约 (USDT Swap) |
+|--------|-------------|----------------------|
+| Binance | ✅ | ✅ |
+| OKX | ✅ | ✅ |
+| Bitget | ✅ | ✅ |
+
+## 交易所接口功能
+
+### REST API (Rs)
+
+| 功能 | 说明 |
+|------|------|
+| `PlaceOrder` | 下单 |
+| `CancelOrder` | 撤单 |
+| `CancelAllOrders` | 撤销所有订单 |
+| `GetOpenOrders` | 获取未成交订单 |
+| `GetOrderHistory` | 获取历史订单 |
+| `GetPosition` | 获取持仓 |
+| `GetAccount` | 获取账户信息 |
+| `GetFundingRate` | 获取资金费率 |
+| `SetLeverage` | 设置杠杆 |
+| `SetMarginMode` | 设置保证金模式 |
+
+### WebSocket (Ws)
+
+| 功能 | 说明 |
+|------|------|
+| `SubscribeDepth` | 订阅深度数据 |
+| `SubscribeTrade` | 订阅成交数据 |
+| `SubscribeOrder` | 订阅订单更新 |
+| `SubscribePosition` | 订阅持仓更新 |
+| `SubscribeAccount` | 订阅账户更新 |
+
+## 快速开始
+
+### 1. 配置
+
+编辑 `configs/config.yaml`:
+
+```yaml
+server:
+  backend_url: "ws://your-backend:8080/ws"
+  actor_id: "actor-001"
+
+exchange:
+  binance:
+    api_key: "your-api-key"
+    secret_key: "your-secret-key"
+
+logging:
+  level: "info"
+  output: "stdout"
+```
+
+### 2. 构建
+
+```bash
+# 使用构建脚本
+./build.sh
+
+# 或手动构建
+go build -o actor ./cmd/server
+```
+
+### 3. 运行
+
+```bash
+./actor
+```
+
+### 4. Docker 部署
+
+```bash
+# 构建镜像
+docker build -t actor:latest .
+
+# 运行容器
+docker run -d --name actor \
+  -v $(pwd)/configs:/app/configs \
+  actor:latest
+```
 
 ## 技术栈
 
 | 组件 | 技术 | 用途 |
 |------|------|------|
-| **HTTP 框架** | Gin | API Gateway |
-| **RPC 框架** | gRPC | 服务间通信 |
-| **Actor 模型** | ProtoActor | 分布式消息处理 |
-| **服务发现** | etcd | 服务注册与发现 |
-| **缓存** | Redis | 分布式缓存 |
-| **关系数据库** | MySQL | 主要数据存储 |
-| **文档数据库** | MongoDB | 审计日志 |
-| **API 文档** | Swagger | API 文档生成 |
-| **配置管理** | Viper | 配置文件管理 |
-| **链路追踪** | Jaeger | 分布式追踪 |
-| **监控** | Prometheus + Grafana | 监控和可视化 |
-
-## 项目结构
-
-```
-microshop/
-├── cmd/                    # 服务入口
-│   ├── user/              # 用户服务
-│   ├── order/             # 订单服务
-│   ├── gateway/           # API Gateway
-│   └── actor/             # Actor 服务
-├── pkg/                   # 公共包
-│   ├── config/           # 配置管理
-│   ├── discovery/        # 服务发现
-│   ├── grpc/             # gRPC 服务器
-│   ├── models/           # 数据模型
-│   └── repository/       # 数据访问层
-├── gateway/              # Gateway 实现
-├── protos/               # Protobuf 定义
-├── config/               # 配置文件
-├── scripts/              # 脚本文件
-├── deployments/          # 部署配置
-├── docs/                 # Swagger 文档
-├── docker-compose.yml    # Docker Compose
-├── Makefile             # 构建脚本
-└── go.mod               # Go 模块
-```
-
-## 快速开始
-
-### 1. 启动基础设施
-
-```bash
-make docker-up
-```
-
-这将启动：
-- etcd (2379)
-- Redis (6379)
-- MySQL (3306)
-- MongoDB (27017)
-- Jaeger (16686)
-- Prometheus (9090)
-- Grafana (3000)
-
-### 2. 安装依赖
-
-```bash
-make deps
-```
-
-### 3. 生成 Protobuf 文件
-
-```bash
-make proto
-```
-
-### 4. 构建服务
-
-```bash
-make build
-```
-
-### 5. 运行服务
-
-```bash
-# 运行用户服务
-make run-user
-
-# 运行订单服务
-make run-order
-
-# 运行 Actor 服务
-make run-actor
-
-# 运行 API Gateway
-make run-gateway
-```
-
-## API 端点
-
-### Gateway (http://localhost:8080)
-
-#### 用户服务
-
-```
-POST   /api/v1/users          - 创建用户
-GET    /api/v1/users/:id      - 获取用户
-GET    /api/v1/users          - 列出用户
-PUT    /api/v1/users/:id      - 更新用户
-DELETE /api/v1/users/:id      - 删除用户
-```
-
-#### 订单服务
-
-```
-POST   /api/v1/orders         - 创建订单
-GET    /api/v1/orders/:id     - 获取订单
-GET    /api/v1/orders         - 列出订单
-PUT    /api/v1/orders/:id/status - 更新订单状态
-```
-
-#### Swagger 文档
-
-```
-http://localhost:8080/swagger/index.html
-```
-
-## 服务发现
-
-服务使用 etcd 进行服务注册和发现：
-
-```
-/microshop/services/
-├── user-service/
-│   └── 0.0.0.0:50051
-└── order-service/
-    └── 0.0.0.0:50052
-```
-
-## Actor 服务
-
-ProtoActor 服务提供分布式消息处理能力：
-
-- **OrderActor**: 处理订单相关消息
-- **NotificationActor**: 处理通知发送
-- **OrderClusterActor**: 分布式订单处理
-
-## 数据库初始化
-
-```bash
-# 连接到 MySQL
-docker exec -it microshop-mysql mysql -uroot -p123456
-
-# 执行初始化脚本
-source /docker-entrypoint-initdb.d/init.sql
-```
-
-## 监控
-
-- **Jaeger UI**: http://localhost:16686
-- **Prometheus**: http://localhost:9090
-- **Grafana**: http://localhost:3000 (admin/admin)
-
-## 配置
-
-配置文件位于 `config/config.yaml`，支持：
-
-- 服务器配置
-- 数据库连接
-- Redis 配置
-- etcd 配置
-- 日志配置
+| HTTP 客户端 | net/http | 交易所 REST API |
+| WebSocket | gorilla/websocket | 实时数据推送 |
+| 精确计算 | shopspring/decimal | 金融计算 |
+| 日志 | uber-go/zap | 结构化日志 |
+| 配置 | yaml.v3 | 配置文件解析 |
+| 并发 | cmap | 线程安全 Map |
 
 ## 开发
 
 ```bash
-# 运行测试
-make test
+# 安装依赖
+go mod tidy
 
-# 运行测试并生成覆盖率报告
-make test-coverage
+# 运行测试
+go test ./...
 
 # 代码格式化
-make fmt
+go fmt ./...
 
 # 代码检查
-make lint
-```
-
-## 清理
-
-```bash
-# 停止所有服务
-make docker-down
-
-# 清理构建产物
-make clean
+go vet ./...
 ```
 
 ## License
