@@ -12,6 +12,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/gobwas/ws v1.4.0
 	github.com/goex-top/dingding v0.0.0-20221203063000-5497df4f5b94
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/huandu/xstrings v1.5.0
 	github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c
@@ -21,8 +22,10 @@ require (
 	github.com/miguelmota/go-solidity-sha3 v0.1.1
 	github.com/petar/GoLLRB v0.0.0-20210522233825-ae3b015fd3e9
 	github.com/phuslu/log v1.0.121
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/shirou/gopsutil/v3 v3.24.5
 	github.com/shopspring/decimal v1.4.0
+	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
 	github.com/templexxx/tsc v1.3.0
 	github.com/valyala/fasthttp v1.69.0
@@ -32,6 +35,7 @@ require (
 	golang.org/x/exp v0.0.0-20251002181428-27f1f14c8bb9
 	golang.org/x/net v0.48.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -60,9 +64,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
-	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/templexxx/cpu v0.1.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
@@ -73,10 +75,6 @@ require (
 	golang.org/x/crypto v0.46.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda // indirect
-	google.golang.org/grpc v1.78.0 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

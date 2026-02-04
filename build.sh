@@ -45,7 +45,7 @@ LDFLAGS="${LDFLAGS} -X 'actor.BuildTime=${BUILD_TIME}'"
 
 # 编译
 echo -e "${YELLOW}Building binary...${NC}"
-go build -ldflags "${LDFLAGS}" -o ${APP_NAME} ./cmd/server
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "${LDFLAGS}" -o ${APP_NAME} ./cmd/server
 
 # 检查构建结果
 if [ -f "${APP_NAME}" ]; then

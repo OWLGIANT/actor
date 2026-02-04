@@ -24,7 +24,7 @@ PROTO_DIR=protos
 PROTO_OUTPUT_DIR=pkg/proto
 GO=go
 PROTOC=protoc
-export https_proxy=http://127.0.0.1:33210 http_proxy=http://127.0.0.1:33210 all_proxy=socks5://127.0.0.1:33211
+#export https_proxy=http://127.0.0.1:33210 http_proxy=http://127.0.0.1:33210 all_proxy=socks5://127.0.0.1:33211
 # 颜色
 GREEN := \033[0;32m
 YELLOW := \033[1;33m
@@ -68,21 +68,7 @@ help:
 
 # 编译二进制文件 (Linux)
 build-bin:
-	@echo "$(GREEN)========================================$(NC)"
-	@echo "$(GREEN)  编译 $(APP_NAME) ($(GOOS)/$(GOARCH))$(NC)"
-	@echo "$(GREEN)  版本: $(VERSION)$(NC)"
-	@echo "$(GREEN)  提交: $(GIT_COMMIT)$(NC)"
-	@echo "$(GREEN)========================================$(NC)"
-	@rm -f $(APP_NAME)
-	@CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
-		-ldflags "-s -w -X 'actor.GitCommitHash=$(GIT_COMMIT)' -X 'actor.AppName=$(APP_NAME)' -X 'actor.BuildTime=$(BUILD_TIME)'" \
-		-o $(APP_NAME) ./cmd/server
-	@echo "$(GREEN)编译完成: $(APP_NAME)$(NC)"
-	@ls -lh $(APP_NAME)
-
-# 编译 macOS 二进制文件
-build-mac:
-	@$(MAKE) build-bin GOOS=darwin GOARCH=amd64
+	@chmod +x ./build.sh && ./build.sh
 
 # 构建 Docker 镜像
 docker-build: build-bin
@@ -91,7 +77,7 @@ docker-build: build-bin
 	@echo "$(GREEN)  构建 Docker 镜像$(NC)"
 	@echo "$(GREEN)  镜像: $(IMAGE_NAME):$(IMAGE_TAG)$(NC)"
 	@echo "$(GREEN)========================================$(NC)"
-	@docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
+	@docker build --platform linux/amd64 -t $(IMAGE_NAME):$(IMAGE_TAG) .
 	@docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):latest
 	@echo "$(GREEN)镜像构建完成!$(NC)"
 	@docker images | grep $(IMAGE_NAME)

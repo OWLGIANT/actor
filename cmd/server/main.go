@@ -5,6 +5,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/google/uuid"
 	"os"
 	"os/signal"
 	"syscall"
@@ -68,9 +69,10 @@ func main() {
 	var backendClient *backend.Client
 	wsURL := getEnvOrFlag(*backendURL, "BACKEND_WS_URL")
 	wsToken := getEnvOrFlag(*backendToken, "BACKEND_WS_TOKEN")
-
+	log.Infof("========Backend URL=====: %s", wsURL)
+	log.Infof("========Backend Token=====: %s", wsToken)
 	if wsURL != "" {
-		robotID := "actor-server"
+		robotID := fmt.Sprintf("actor-%s", uuid.NewString())
 		exchange := "multi"
 		tenantID := uint32(0)
 
@@ -82,24 +84,24 @@ func main() {
 		// Create command handler with robot manager
 		handler := backend.NewDefaultHandler().
 			OnCreate(func(data map[string]interface{}) error {
-				robotID, _ := data["robot_id"].(string)
+				robotID, _ = data["robot_id"].(string)
 				robotType, _ := data["robot_type"].(string)
 				if robotType == "" {
 					robotType = "cat"
 				}
 				logger.Infof("Received create command: robot_id=%s, type=%s", robotID, robotType)
-				if err := robotManager.CreateRobot(robotID, robotType, data); err != nil {
+				if err = robotManager.CreateRobot(robotID, robotType, data); err != nil {
 					return err
 				}
 				return robotManager.StartRobot(robotID, data)
 			}).
 			OnStart(func(data map[string]interface{}) error {
-				robotID, _ := data["robot_id"].(string)
+				robotID, _ = data["robot_id"].(string)
 				logger.Infof("Received start command: robot_id=%s", robotID)
 				return robotManager.StartRobot(robotID, data)
 			}).
 			OnStop(func(data map[string]interface{}) error {
-				robotID, _ := data["robot_id"].(string)
+				robotID, _ = data["robot_id"].(string)
 				logger.Infof("Received stop command: robot_id=%s", robotID)
 				return robotManager.StopRobot(robotID, data)
 			}).
@@ -112,7 +114,7 @@ func main() {
 				return nil
 			}).
 			OnDelete(func(data map[string]interface{}) error {
-				robotID, _ := data["robot_id"].(string)
+				robotID, _ = data["robot_id"].(string)
 				logger.Infof("Received delete command: robot_id=%s", robotID)
 				return robotManager.DeleteRobot(robotID)
 			})
@@ -128,7 +130,7 @@ func main() {
 		}, handler, logger)
 
 		backendClient.OnConnect(func() {
-			logger.Info("Connected to backend")
+			logger.Info("Connected to backend......")
 		})
 
 		backendClient.OnDisconnect(func(err error) {
@@ -139,10 +141,11 @@ func main() {
 		robotManager.SetBackendClient(backendClient)
 
 		// Connect to backend
-		if err := backendClient.Connect(); err != nil {
+		if err = backendClient.Connect(); err != nil {
 			logger.Errorf("Failed to connect to backend: %v", err)
 		} else {
 			backendClient.Run()
+			logger.Infof("====Connected to backend===========")
 		}
 	}
 
