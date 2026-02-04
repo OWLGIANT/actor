@@ -26,8 +26,14 @@ func (c *Client) reconnect() {
 
 		c.logger.Infof("Attempting to reconnect (attempt %d)...", count)
 
-		// Wait before reconnecting
-		time.Sleep(c.config.ReconnectDelay)
+		// Wait before reconnecting (with context cancellation support)
+		select {
+		case <-time.After(c.config.ReconnectDelay):
+			// Continue to reconnect
+		case <-c.ctx.Done():
+			c.logger.Info("Reconnection cancelled due to context cancellation")
+			return
+		}
 
 		// Try to connect
 		if err := c.connect(); err != nil {
